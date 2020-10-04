@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+    <head>
+      <meta charset="UTF-8">
+
+      <title>Hill, Blake - GES387 - Midterm</title>
+        <h2>Percentage of Population 65 years of Age or Older</h2>
+
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+        integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+        crossorigin=""/>
+
+        <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+        integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+        crossorigin=""></script>
+<!-- Page Icon -->
+        <link rel="icon" href="OldMan.png" >
+
+            <style type="text/css">
+              html, body { margin: 0; padding: 0; height: 100%; }
+              #map { min-height: 90%; }
+            </style>
+
+                <script type="text/javascript" src="Counties.js"></script>
+                <script type="text/javascript" src="States.js"></script>
+
+
+        <style>
+          /* Optional: change the appearance of legends */
+          .legend {
+              padding: 6px 8px;
+              line-height: 18px;
+              background: rgba(255,255,255,0.9);
+              box-shadow: 0 0 15px rgba(0,0,0,0.2);
+              border-radius: 5px;
+          }
+
+           /* Optional: appearance of the legend color boxes */
+           .legend i {
+              width: 18px;
+              height: 18px;
+              float: left;
+              margin-right: 8px;
+              opacity: 1;
+          }
+
+        </style>
+
+  </head>
+
+    <body>
+
+        <div id="map" style="height: 500px"></div>
+
+        <script type="text/javascript">
+
+          var map = L.map('map', {
+              center: [39.2728492,-95.7832081],
+              zoom: 5
+          });
+
+              var antique = L.tileLayer('https://cartocdn_{s}.global.ssl.fastly.net/base-antique/{z}/{x}/{y}.png', {
+                 attribution: 'Map tiles by Carto, under CC BY 3.0. Data by OpenStreetMap, under ODbL.',
+                 maxZoom: 10,
+                 minZoom: 4
+               }).addTo(map);
+
+// define break values, attribute, and colors for choropleth map
+        function getColor(value) {
+            return value > 35 ? '#3f007d':
+                   value > 30 ? '#593194':
+                   value > 25 ? '#715eaa':
+                   value > 20 ? '#8d89c0':
+                   value > 15 ? '#b0afd4':
+                   value > 10 ? '#dedded':
+                                 '#fdfdfd';
+        }
+
+        function style(feature){
+            return {
+                fillColor: getColor(feature.properties.per_aging),
+                weight: 2,
+                opacity: 1,
+                color: 'darkgray',
+                fillOpacity: 0.9,
+              };
+           }
+// highlight features for mouseover effect popups
+      function highlightFeature(e) {
+
+          var feature = e.target;
+
+          feature.setStyle({
+              weight: 5,
+              color: '#A9A9A9',
+              fillOpacity: 0.7
+          });
+
+          // Bring the highlighted feature to front so that the border doesn’t clash with nearby states
+          // But not for IE, Opera or Edge, since they have problems doing bringToFront on mouseover
+          if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+              feature.bringToFront();
+          }
+      }
+// variable(s) to highlight on mouseover
+      var Counties;
+      var States;
+
+      function resetHighlight(e) {
+          Counties.resetStyle(e.target), States.resetStyle(e.target);
+      }
+
+      function onEachFeature(feature, layer) {
+        layer.on({
+        mouseover: highlightFeature, // Popup on mouseover
+        mouseout: resetHighlight,   // Close popup on mouseout
+    });
+}
+//define County layer
+    Counties = L.geoJson(Counties,{
+          style:style,
+          onEachFeature: onEachFeature
+        }).bindTooltip(function (layer){
+          return layer.feature.properties.NAMELSAD10 + '<p style="color:Purple">' + layer.feature.properties.per_aging.toString() + '% of Population 65+yrs </p>'}).addTo(map);
+
+//define States Layer
+        States = L.geoJson(States,{
+              style:style,
+              onEachFeature: onEachFeature
+            }).bindTooltip(function (layer){
+              return layer.feature.properties.NAME10 + '<p style="color:Purple">' + layer.feature.properties.per_aging.toString() + '% of Population 65+yrs </p>'}).addTo(map);
+
+//define Legend & break values
+                  var Sharedlegend = L.control({position: 'bottomleft'});
+
+                  Sharedlegend.onAdd = function (map) {
+
+                  var div = L.DomUtil.create('div', 'legend'),
+                  grades = [0, 10, 15, 20, 25, 30, 35];
+                  div.innerHTML = '<b>Percentage of Population <br>Age 65+ <br></b>';
+
+                  for (var i = 0; i < grades.length; i++) {
+                  div.innerHTML +=
+                  '<i style="background:' + getColor(grades[i] + 1) + '"></i>' +
+                  grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+                  };
+
+                  return div};
+
+//add legend to map
+                      Sharedlegend.addTo(map);
+
+//define variables for layer control
+          // left basemap in control to allow layers to both be on at once. I liked how the counties were visible through the states
+
+            var basemaps = {"Antique Canvas": antique}
+
+             var overlaymaps = {
+             "Percentage per County": Counties,
+             "Percentage per State": States,
+             };
+//make layers controllable
+             L.control.layers(basemaps, overlaymaps).addTo(map);
+
+        </script>
+   </body>
+</html>
